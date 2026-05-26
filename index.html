@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA - Haute Parfumerie & Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0a0a0a; color: #f5f5f5; scroll-behavior: smooth; }
+        .serif { font-family: 'Cormorant Garamond', serif; }
+        .gold-text { background: linear-gradient(135deg, #c5a880 0%, #e6d5b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .gold-bg { background: linear-gradient(135deg, #c5a880 0%, #b38f55 100%); }
+        .modal-blur { backdrop-filter: blur(8px); background: rgba(0,0,0,0.85); }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+    <!-- BARRA DE NAVEGACIÓN GLOBAL -->
+    <nav class="sticky top-0 z-50 bg-[#0a0a0a]/90 border-b border-white/10 px-4 md:px-8 py-4 flex justify-between items-center">
+        <!-- El logotipo ahora redirige a la página principal siempre -->
+        <div class="text-3xl font-bold tracking-widest serif gold-text cursor-pointer select-none" onclick="navigateTo('home')">AURA</div>
+        
+        <!-- Buscador -->
+        <div id="nav-search-bar" class="relative w-1/3 max-w-xs mx-4">
+            <input type="text" id="search-input" oninput="handleSearch()" placeholder="Buscar notas, marcas..." 
+                   class="w-full bg-zinc-950 border border-white/10 rounded-full py-1.5 pl-9 pr-4 text-xs focus:outline-none focus:border-[#c5a880] text-white">
+            <i data-lucide="search" class="absolute left-3 top-2 w-3.5 h-3.5 text-zinc-500"></i>
+        </div>
+
+        <div class="flex items-center space-x-6 text-xs uppercase tracking-widest">
+            <button onclick="navigateTo('home')" class="hover:text-[#c5a880] transition hidden sm:inline">Boutique</button>
+            <button onclick="navigateTo('admin')" class="text-zinc-400 hover:text-amber-400 transition flex items-center gap-1">
+                <i data-lucide="shield-check" class="w-4 h-4"></i> Admin
+            </button>
+            <button onclick="navigateTo('cart')" class="relative hover:text-[#c5a880] transition p-1">
+                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                <span id="cart-count" class="absolute -top-1 -right-1 bg-[#c5a880] text-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">0</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ================= PÁGINA 1: HOME & TIENDA ================= -->
+    <div id="view-home" class="view-section">
+        <header class="h-[35vh] flex items-center justify-center bg-zinc-950 relative overflow-hidden border-b border-white/5">
+            <div class="absolute inset-0 opacity-20 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=1600&q=80');"></div>
+            <div class="relative text-center z-10 px-4">
+                <span class="text-[10px] tracking-[0.4em] uppercase text-[#c5a880]">Collection Privée</span>
+                <h1 class="text-4xl md:text-5xl serif mt-2">Esencias de Vanguardia</h1>
+            </div>
+        </header>
+
+        <main class="py-12 px-4 md:px-8 max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="products-grid">
+                <!-- Productos dinámicos -->
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= PÁGINA 2: CARRITO DE COMPRAS DETALLADO ================= -->
+    <div id="view-cart" class="view-section hidden py-12 px-4 md:px-8 max-w-5xl mx-auto">
+        <h2 class="text-4xl serif tracking-wide mb-8">Tu Maleta Aromática</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-4" id="cart-large-list">
+                <!-- Cargado por JS -->
+            </div>
+            <div class="bg-zinc-900/50 border border-white/10 p-6 rounded-2xl h-fit">
+                <h3 class="text-lg font-semibold mb-4 border-b border-white/10 pb-3">Resumen del Pedido</h3>
+                <div class="space-y-3 text-sm text-zinc-400">
+                    <div class="flex justify-between"><span>Subtotal</span><span id="summary-subtotal">$0.00</span></div>
+                    <div class="flex justify-between"><span>Envío Express</span><span class="text-green-400">Gratuito</span></div>
+                    <div class="flex justify-between border-t border-white/10 pt-3 text-white font-semibold text-base">
+                        <span>Total</span><span id="summary-total" class="gold-text">$0.00</span>
+                    </div>
+                </div>
+                <button onclick="processOrder()" class="w-full gold-bg text-black font-bold text-xs uppercase tracking-widest py-4 mt-6 rounded-xl hover:opacity-95 transition">
+                    Confirmar y Pagar Compra
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PÁGINA 3: PANEL DE ADMINISTRACIÓN AVANZADO ================= -->
+    <div id="view-admin" class="view-section hidden py-10 px-4 md:px-8 max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-white/10 pb-4 gap-4">
+            <div>
+                <h2 class="text-3xl serif tracking-wide text-amber-400 flex items-center gap-2">
+                    <i data-lucide="sliders"></i> Panel de Control Interno
+                </h2>
+                <p class="text-xs text-zinc-500 uppercase tracking-widest mt-1">Gestión de Inventario, Ventas e Historiales</p>
+            </div>
+            <button onclick="openAdminModal()" class="bg-zinc-800 border border-white/20 text-xs px-4 py-2.5 rounded-xl hover:bg-zinc-700 transition flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4 text-amber-400"></i> Añadir Nueva Fragancia
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div class="bg-zinc-900 p-4 rounded-xl border border-white/5">
+                <p class="text-xs text-zinc-500 uppercase">Facturación Total</p>
+                <p id="admin-stat-sales" class="text-2xl font-bold text-green-400 mt-1">$0.00</p>
+            </div>
+            <div class="bg-zinc-900 p-4 rounded-xl border border-white/5">
+                <p class="text-xs text-zinc-500 uppercase">Órdenes Procesadas</p>
+                <p id="admin-stat-orders" class="text-2xl font-bold text-blue-400 mt-1">0</p>
+            </div>
+            <div class="bg-zinc-900 p-4 rounded-xl border border-white/5">
+                <p class="text-xs text-zinc-500 uppercase">Variedades en Stock</p>
+                <p id="admin-stat-stock" class="text-2xl font-bold text-amber-400 mt-1">0</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 bg-zinc-900/30 border border-white/5 rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4 flex items-center gap-2"><i data-lucide="package" class="w-4 h-4 text-zinc-400"></i> Catálogo e Inventario</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-white/10 text-zinc-500 uppercase tracking-wider">
+                                <th class="pb-3 font-medium">Fragancia</th>
+                                <th class="pb-3 font-medium">Familia</th>
+                                <th class="pb-3 font-medium">Precio</th>
+                                <th class="pb-3 font-medium text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-inventory-table" class="divide-y divide-white/5">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-zinc-900/30 border border-white/5 rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4 flex items-center gap-2"><i data-lucide="dollar-sign" class="w-4 h-4 text-green-400"></i> Últimos Pagos Recibidos</h3>
+                <div class="space-y-3 max-h-[400px] overflow-y-auto pr-1" id="admin-sales-log">
+                    <p class="text-zinc-600 text-xs text-center py-8">No se registran transacciones en esta sesión.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE ADMINISTRACIÓN -->
+    <div id="admin-modal" class="fixed inset-0 z-[80] hidden modal-blur flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-white/10 w-full max-w-md p-6 rounded-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="admin-modal-title" class="text-lg font-bold text-amber-400">Crear Esencia</h3>
+                <button onclick="closeAdminModal()"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="product-form" onsubmit="saveProduct(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="form-product-id">
+                <div>
+                    <label class="block text-zinc-400 mb-1">Nombre Comercial</label>
+                    <input type="text" id="form-name" required class="w-full bg-zinc-950 border border-white/10 p-2.5 rounded-lg text-white">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-zinc-400 mb-1">Familia Olfativa</label>
+                        <select id="form-category" class="w-full bg-zinc-950 border border-white/10 p-2.5 rounded-lg text-white">
+                            <option value="Amaderado">Amaderado</option>
+                            <option value="Cítrico">Cítrico</option>
+                            <option value="Oriental">Oriental</option>
+                            <option value="Floral">Floral</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-zinc-400 mb-1">Precio ($)</label>
+                        <input type="number" step="0.01" id="form-price" required class="w-full bg-zinc-950 border border-white/10 p-2.5 rounded-lg text-white">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-zinc-400 mb-1">Notas Olfativas</label>
+                    <input type="text" id="form-notes" placeholder="Ej: Vainilla, Oud" required class="w-full bg-zinc-950 border border-white/10 p-2.5 rounded-lg text-white">
+                </div>
+                <div>
+                    <label class="block text-zinc-400 mb-1">Descripción</label>
+                    <textarea id="form-desc" rows="3" required class="w-full bg-zinc-950 border border-white/10 p-2.5 rounded-lg text-white"></textarea>
+                </div>
+                <div>
+                    <label class="block text-zinc-400 mb-1">URL de la Imagen</label>
+                    <input type="url" id="form-img" required class="w-full bg-zinc-950 border border-white/10 p-2.5 rounded-lg text-white">
+                </div>
+                <button type="submit" class="w-full gold-bg text-black font-bold py-3 rounded-lg mt-2 uppercase tracking-wider">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DETALLE DE PRODUCTO -->
+    <div id="product-modal" class="fixed inset-0 z-[60] hidden modal-blur flex items-center justify-center p-4">
+        <div class="bg-zinc-900 w-full max-w-2xl rounded-3xl overflow-hidden flex flex-col md:flex-row border border-white/10">
+            <div class="md:w-1/2 h-56 md:h-auto"><img id="modal-img" src="" class="w-full h-full object-cover"></div>
+            <div class="md:w-1/2 p-6 flex flex-col justify-between">
+                <div class="relative">
+                    <button onclick="closeModal()" class="absolute top-0 right-0 hover:text-[#c5a880]"><i data-lucide="x"></i></button>
+                    <span id="modal-cat" class="text-[9px] uppercase text-[#c5a880] tracking-widest block mb-1"></span>
+                    <h2 id="modal-title" class="text-2xl serif tracking-wide mb-3"></h2>
+                    <p id="modal-desc" class="text-zinc-400 text-xs leading-relaxed mb-4"></p>
+                    <p class="text-[9px] uppercase text-zinc-500 mb-1 tracking-widest">Arquitectura de Notas</p>
+                    <p id="modal-notes" class="text-xs italic text-zinc-300"></p>
+                </div>
+                <div class="flex items-center justify-between border-t border-white/10 pt-4 mt-4">
+                    <span id="modal-price" class="text-lg font-semibold"></span>
+                    <button id="modal-add-btn" class="bg-white text-black px-5 py-2 text-xs uppercase font-bold hover:gold-bg transition">Añadir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE LOGICA DE SISTEMA CENTRALIZADO -->
+    <script>
+        let products = [
+            { id: 1, name: "Nuit Ébène", category: "Amaderado", price: 185.0, notes: "Sándalo, Oud, Pimienta Negra", desc: "Expresión nocturna radical para personalidades misteriosas.", img: "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=600&q=80" },
+            { id: 2, name: "Soleil Orange", category: "Cítrico", price: 145.0, notes: "Bergamota, Neroli, Ámbar Blanco", desc: "Ráfagas energéticas del mediterráneo cristalizadas en luz.", img: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=600&q=80" },
+            { id: 3, name: "Oud Mystique", category: "Oriental", price: 210.0, notes: "Azafrán, Vainilla, Incienso", desc: "Opulencia pura de Medio Oriente estructurada en alta concentración.", img: "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=600&q=80" }
+        ];
+
+        let cart = [];
+        let transactions = [];
+
+        // NUEVO SISTEMA DE ENRUTAMIENTO COMPATIBLE CON BOTONES DEL NAVEGADOR (BACK/FORWARD)
+        function navigateTo(viewName, isPushState = true) {
+            document.querySelectorAll('.view-section').forEach(section => section.classList.add('hidden'));
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            
+            const searchBar = document.getElementById('nav-search-bar');
+            if (viewName === 'home') searchBar.classList.remove('invisible');
+            else searchBar.classList.add('invisible');
+
+            if(viewName === 'cart') renderCartPage();
+            if(viewName === 'admin') renderAdminPage();
+            
+            // Guarda el estado en el historial del navegador si es una navegación directa
+            if (isPushState) {
+                window.history.pushState({ view: viewName }, "", `#${viewName}`);
+            }
+            window.scrollTo(0,0);
+        }
+
+        // Detecta cuando el usuario le da al botón "Atrás" o "Adelante" del navegador
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.view) {
+                navigateTo(event.state.view, false);
+            } else {
+                navigateTo('home', false); // Por defecto si no hay estado previo
+            }
+        });
+
+        function handleSearch() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filtered = products.filter(p => 
+                p.name.toLowerCase().includes(query) || 
+                p.category.toLowerCase().includes(query) || 
+                p.notes.toLowerCase().includes(query)
+            );
+            renderStoreGrid(filtered);
+        }
+
+        function renderStoreGrid(items = products) {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = items.map(p => `
+                <div class="group bg-zinc-900/20 border border-white/5 p-3 rounded-2xl hover:border-white/10 transition">
+                    <div class="relative aspect-[4/5] overflow-hidden rounded-xl bg-zinc-950 mb-3 cursor-pointer" onclick="openProduct(${p.id})">
+                        <img src="${p.img}" class="w-full h-full object-cover opacity-90 group-hover:scale-102 transition duration-500">
+                    </div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[9px] uppercase tracking-widest text-zinc-500">${p.category}</span>
+                            <h3 class="serif text-xl cursor-pointer" onclick="openProduct(${p.id})">${p.name}</h3>
+                        </div>
+                        <span class="text-sm font-semibold text-[#c5a880]">$${p.price.toFixed(2)}</span>
+                    </div>
+                    <button onclick="addToCart(${p.id})" class="w-full border border-white/10 text-[10px] uppercase font-bold tracking-widest py-2 rounded-lg mt-3 hover:bg-white hover:text-black transition">
+                        Añadir a la maleta
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function openProduct(id) {
+            const p = products.find(prod => prod.id === id);
+            document.getElementById('modal-img').src = p.img;
+            document.getElementById('modal-title').innerText = p.name;
+            document.getElementById('modal-cat').innerText = p.category;
+            document.getElementById('modal-desc').innerText = p.desc;
+            document.getElementById('modal-notes').innerText = p.notes;
+            document.getElementById('modal-price').innerText = `$${p.price.toFixed(2)}`;
+            document.getElementById('modal-add-btn').onclick = () => { addToCart(p.id); closeModal(); };
+            document.getElementById('product-modal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
+
+        function addToCart(id) {
+            const p = products.find(prod => prod.id === id);
+            const inCart = cart.find(item => item.id === id);
+            if(inCart) inCart.quantity++;
+            else cart.push({...p, quantity: 1});
+            document.getElementById('cart-count').innerText = cart.reduce((acc,i)=> acc + i.quantity, 0);
+        }
+
+        function changeQuantity(id, amount) {
+            const item = cart.find(i => i.id === id);
+            if(item) {
+                item.quantity += amount;
+                if(item.quantity <= 0) cart = cart.filter(i => i.id !== id);
+            }
+            document.getElementById('cart-count').innerText = cart.reduce((acc,i)=> acc + i.quantity, 0);
+            renderCartPage();
+        }
+
+        function renderCartPage() {
+            const container = document.getElementById('cart-large-list');
+            const subtotalEl = document.getElementById('summary-subtotal');
+            const totalEl = document.getElementById('summary-total');
+            
+            if(cart.length === 0) {
+                container.innerHTML = `<div class="text-center py-16 text-zinc-500 border border-dashed border-white/10 rounded-2xl">La maleta está vacía.</div>`;
+                subtotalEl.innerText = "$0.00";
+                totalEl.innerText = "$0.00";
+                return;
+            }
+
+            container.innerHTML = cart.map(item => `
+                <div class="flex flex-col sm:flex-row items-center gap-4 bg-zinc-900/40 border border-white/5 p-4 rounded-xl">
+                    <img src="${item.img}" class="w-16 h-16 object-cover rounded-lg bg-zinc-950">
+                    <div class="flex-1 text-center sm:text-left">
+                        <h4 class="serif text-lg">${item.name}</h4>
+                        <p class="text-xs text-zinc-500">${item.category}</p>
+                    </div>
+                    <div class="flex items-center gap-3 border border-white/10 rounded-lg p-1 bg-zinc-950">
+                        <button onclick="changeQuantity(${item.id}, -1)" class="px-2 text-zinc-400 hover:text-white">-</button>
+                        <span class="text-xs font-semibold px-1">${item.quantity}</span>
+                        <button onclick="changeQuantity(${item.id}, 1)" class="px-2 text-zinc-400 hover:text-white">+</button>
+                    </div>
+                    <span class="text-sm font-semibold text-[#e6d5b8]">$${(item.price * item.quantity).toFixed(2)}</span>
+                </div>
+            `).join('');
+
+            const sum = cart.reduce((acc, i) => acc + (i.price * i.quantity), 0);
+            subtotalEl.innerText = `$${sum.toFixed(2)}`;
+            totalEl.innerText = `$${sum.toFixed(2)}`;
+        }
+
+        function processOrder() {
+            if(cart.length === 0) return alert("No hay productos en el carro.");
+            const total = cart.reduce((acc, i) => acc + (i.price * i.quantity), 0);
+            const referenceId = "AU-" + Math.floor(100000 + Math.random() * 900000);
+            
+            transactions.unshift({
+                id: referenceId,
+                items: cart.map(i => `${i.name} (x${i.quantity})`).join(', '),
+                total: total,
+                date: new Date().toLocaleTimeString()
+            });
+
+            alert(`🔒 Transacción Procesada con Éxito.\nReferencia: ${referenceId}`);
+            cart = [];
+            document.getElementById('cart-count').innerText = 0;
+            navigateTo('admin'); 
+        }
+
+        function renderAdminPage() {
+            const totalRevenue = transactions.reduce((acc, t) => acc + t.total, 0);
+            document.getElementById('admin-stat-sales').innerText = `$${totalRevenue.toFixed(2)}`;
+            document.getElementById('admin-stat-orders').innerText = transactions.length;
+            document.getElementById('admin-stat-stock').innerText = products.length;
+
+            const tableBody = document.getElementById('admin-inventory-table');
+            tableBody.innerHTML = products.map(p => `
+                <tr class="hover:bg-white/5 transition">
+                    <td class="py-3 flex items-center gap-2">
+                        <img src="${p.img}" class="w-8 h-8 object-cover rounded">
+                        <span class="font-semibold text-zinc-200">${p.name}</span>
+                    </td>
+                    <td class="py-3 text-zinc-400">${p.category}</td>
+                    <td class="py-3 text-amber-300 font-medium">$${p.price.toFixed(2)}</td>
+                    <td class="py-3 text-right space-x-2">
+                        <button onclick="editProduct(${p.id})" class="text-blue-400 hover:underline">Editar</button>
+                        <button onclick="deleteProduct(${p.id})" class="text-red-400 hover:underline">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            const logSection = document.getElementById('admin-sales-log');
+            if(transactions.length === 0) {
+                logSection.innerHTML = `<p class="text-zinc-600 text-xs text-center py-8">No se registran transacciones.</p>`;
+            } else {
+                logSection.innerHTML = transactions.map(t => `
+                    <div class="bg-zinc-950 p-3 rounded-xl border border-white/5 text-[11px]">
+                        <div class="flex justify-between font-bold mb-1">
+                            <span class="text-green-400">${t.id}</span>
+                            <span class="text-zinc-500">${t.date}</span>
+                        </div>
+                        <p class="text-zinc-400 truncate">${t.items}</p>
+                        <div class="text-right font-semibold text-white mt-1">$${t.total.toFixed(2)}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function openAdminModal(id = null) {
+            const modal = document.getElementById('admin-modal');
+            const form = document.getElementById('product-form');
+            form.reset();
+            document.getElementById('form-product-id').value = "";
+            
+            if(id) {
+                document.getElementById('admin-modal-title').innerText = "Modificar Esencia";
+                const p = products.find(prod => prod.id === id);
+                document.getElementById('form-product-id').value = p.id;
+                document.getElementById('form-name').value = p.name;
+                document.getElementById('form-category').value = p.category;
+                document.getElementById('form-price').value = p.price;
+                document.getElementById('form-notes').value = p.notes;
+                document.getElementById('form-desc').value = p.desc;
+                document.getElementById('form-img').value = p.img;
+            } else {
+                document.getElementById('admin-modal-title').innerText = "Crear Esencia";
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); }
+
+        function saveProduct(e) {
+            e.preventDefault();
+            const id = document.getElementById('form-product-id').value;
+            const name = document.getElementById('form-name').value;
+            const category = document.getElementById('form-category').value;
+            const price = parseFloat(document.getElementById('form-price').value);
+            const notes = document.getElementById('form-notes').value;
+            const desc = document.getElementById('form-desc').value;
+            const img = document.getElementById('form-img').value;
+
+            if(id) {
+                const index = products.findIndex(p => p.id == id);
+                products[index] = { id: parseInt(id), name, category, price, notes, desc, img };
+            } else {
+                const newId = products.length > 0 ? Math.max(...products.map(p=>p.id)) + 1 : 1;
+                products.push({ id: newId, name, category, price, notes, desc, img });
+            }
+
+            closeAdminModal();
+            renderStoreGrid();
+            renderAdminPage();
+        }
+
+        function editProduct(id) { openAdminModal(id); }
+
+        function deleteProduct(id) {
+            if(confirm("¿Seguro que deseas eliminar este perfume?")) {
+                products = products.filter(p => p.id !== id);
+                renderStoreGrid();
+                renderAdminPage();
+            }
+        }
+
+        // Estado inicial de la historia clínica de navegación
+        window.history.replaceState({ view: 'home' }, "", "#home");
+        renderStoreGrid();
+        lucide.createIcons();
+    </script>
+</body>
+</html>
